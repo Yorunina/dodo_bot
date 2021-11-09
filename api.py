@@ -21,7 +21,7 @@ def glo_get(key, defValue = None):
     except KeyError:
         return defValue
 
-#HTTP POST API集合
+#HTTP POST API集合，太多了，鬼写注释
 def api_http(url, req):
     headers = {'Content-Type': 'application/x-www-form-urlencoded'}
     payload = {"uid": config.uid, "token": config.token,

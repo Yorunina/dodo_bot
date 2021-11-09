@@ -1,9 +1,9 @@
-from unittest import result
 from pyparsing import *
 #import api
 import sqlite3
 import random
 import re
+import copy
 
 roll_ceil = 100
 
@@ -18,35 +18,49 @@ def int_reform(num ,min, max):
     elif num>max:
         raise Exception("超出有效上值范围")
 
-
+#掷骰表达式解析，属于step4
 class Roll_Analysis():
     def __init__(self, expr):
         self.expr = expr
         return
     #通过遍历来解析当前表达式中的层递关系
-    def travers(self):
+    def solve(self):
         expr = self.expr
         node_d = None
+        #如果已经确定了是掷骰表达式，就会进来被遍历一通
         for i in range(0,len(expr)):
+            #如果当前位置是数字
             if expr[i].isdigit():
+                #没啥好干的
                 continue
             elif expr[i] == "d":
+                #如果有d，则以d为中心前后瞻仰来建立节点Node_d
                 if node_d:
+                    #如果已经存在节点，就让节点结算，把他的结果作为投掷面数
                     times = node_d.result
                 elif i-1 < 0:
+                    #如果处在第一位，则为省略前值1
                     times = 1
                 elif expr[i-1].isdigit():
+                    #如果是数字，那就规整
                     times = int_reform(expr[i-1], 1, 100)
                 else:
+                    #如果啥都不是，那就是默认值
                     times = 1
                 if i+1 >= len(expr):
+                    #如果处于最后一位，则省略后值，默认头
                     ceil = roll_ceil
                 elif expr[i+1].isdigit():
+                        #如果是数字，那就规章
                         ceil = int_reform(expr[i+1], 1, 100000)
                 else:
+                    #不然默认
                     ceil = roll_ceil
                 node_d = Node_d(times, ceil, 1)
+                #按照数据建立节点Node_d
             elif expr[i] == "b":
+                #如果检查当前位是b
+                #特殊符号必须作为node_d的属性出现
                 if i+1 >= len(expr):
                     times = 1
                 elif expr[i+1].isdigit():
@@ -54,8 +68,10 @@ class Roll_Analysis():
                 else:
                     times = 1
                 if node_d:
+                    #检查是否有已经存在的节点，如果有，就计算
                     node_d.b_cal(times)
                 else:
+                    #如果没有，按照默认值新建然后计算
                     node_d = Node_d(1, roll_ceil, 1)
                     node_d.b_cal(times)
             elif expr[i] == "p":
@@ -94,9 +110,9 @@ class Roll_Analysis():
                 else:
                     node_d = Node_d(1, roll_ceil, 1)
                     node_d.q_cal(times)
-        return node_d.result_str
+        return node_d.result_str, node_d.result
 
-
+#建立节点，属于step4中的小内容
 class Node_d:
     def __init__(self, times = 1, ceil = 100, floor = 1):
         self.d_times, self.d_ceil, self.d_floor = int(times), int(ceil), int(floor)
@@ -203,17 +219,20 @@ class Node_d:
         self.random_list = self.random_list[0:times]
         self.result = sum(self.random_list)
         self.result_str = "{" + ",".join(map(str, ori_list)) + "}" + "[" + "+".join(map(str, self.random_list)) + "]" + "(" + str(self.result) + ")" 
-        
         return
 
+#万恶之源对象
 class Dice:
     def __init__(self, dice_ori_str):
         self.dice_expr = dice_ori_str
+        self.expr = self.roll_parsing()
+        self.expr_str = self.expr
         return
 
+
+#初始化Dice对象的时候就会执行这个，属于step0
     def roll_parsing(self):
         #这里用于解析掷骰表达式
-        #此处用来解析括号
         num = Combine(Word(nums) + (Word(nums) + '.' + Word(nums))*(0,1))
         #定义了括号的匹配法则
         LPAR,RPAR = map(Suppress, '()')
@@ -226,29 +245,45 @@ class Dice:
         expr <<= d_factor + ZeroOrMore(oneOf('* / + -') + d_factor)
         return expr.parseString(self.dice_expr).as_list()
 
-    #表达式计算
-    def expr_cal(self, row:list):
-        temp_row = row
-        for i in range(0, len(row)):
+    #表达式计算，属于step3
+    def single_expr_cal(self, expr:list, expr_str):
+        for i in range(0, len(expr)):
             #查询是否为掷骰式，含有下列元素则说明其符合
-            if row[i] in ["d","p","k","q","b"]:
-                roll_ans = Roll_Analysis(row)
-                self.roll_cal(roll_ans)
-                break
-        res = eval("".join(temp_row))
+            if expr[i] in ["d","p","k","q","b"]:
+                #掷骰表达式都给我进step4被解析
+                res_str, res = Roll_Analysis(expr).solve()
+                return res_str, res
+        #普通列表表达式转结果
+        res_str = "".join(map(str,expr))
+        #ans如果是数字，其会经过eval导致变为int
+        res = str(eval(res_str))
+        expr_str = "".join(expr_str)
+        return expr_str, res
 
-        return res
 
-    #多深度遍历
-    def travers(self):
-        expr = self.roll_parsing()
+    #表达式计算，这相当于掷骰表达式解析的入口函数，属于step1
+    def expr_cal(self):
+        res_str, res = self.travers(self.expr)
+        #这三个返回分别是，第一个给用户看的，第二个给用户看的，第三个给用户看的
+        return self.dice_expr, res_str, res
+
+    #多深度遍历，入口下面就是这玩意，属于是step2
+    def travers(self, expr):
+        #你他吗不深拷贝就乱鸡巴改是吧？啊？
+        expr_str = copy.deepcopy(expr)
         for i in range(0,len(expr)):
             row = expr[i]
             if isinstance(row, list):
-                ans = self.travers(row)
+                #如果当前位置是列表，就往下深入一层
+                ans_str, ans = self.travers(row)
                 expr[i] = ans
-        res = self.roll_cal(expr)
-        return res
+                #字符串和结果都要记一下
+                expr_str[i] = ans_str
+        #对于当前深度的列表进行综合计算
+        res_str, res = self.single_expr_cal(expr, expr_str)
+        #返回值用来迭代
+        return res_str, res
+#+(2*2)d2d2d2
 
-dice = Dice("")
-print(Roll_Analysis(["3","d","100","q","2"]).travers())
+ori_expr, res_str, res = Dice("3d100k2+(2*2)d2d2d100p").expr_cal()
+print("{}={}={}".format(ori_expr, res_str, res))
