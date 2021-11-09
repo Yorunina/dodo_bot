@@ -7,7 +7,6 @@ import copy
 
 roll_ceil = 100
 
-
 def int_reform(num ,min, max):
     #取整
     num = round(int(num))
@@ -245,21 +244,6 @@ class Dice:
         expr <<= d_factor + ZeroOrMore(oneOf('* / + -') + d_factor)
         return expr.parseString(self.dice_expr).as_list()
 
-    #表达式计算，属于step3
-    def single_expr_cal(self, expr:list, expr_str):
-        for i in range(0, len(expr)):
-            #查询是否为掷骰式，含有下列元素则说明其符合
-            if expr[i] in ["d","p","k","q","b"]:
-                #掷骰表达式都给我进step4被解析
-                res_str, res = Roll_Analysis(expr).solve()
-                return res_str, res
-        #普通列表表达式转结果
-        res_str = "".join(map(str,expr))
-        #ans如果是数字，其会经过eval导致变为int
-        res = str(eval(res_str))
-        expr_str = "".join(expr_str)
-        return expr_str, res
-
 
     #表达式计算，这相当于掷骰表达式解析的入口函数，属于step1
     def expr_cal(self):
@@ -283,7 +267,32 @@ class Dice:
         res_str, res = self.single_expr_cal(expr, expr_str)
         #返回值用来迭代
         return res_str, res
-#+(2*2)d2d2d2
 
-ori_expr, res_str, res = Dice("3d100k2+(2*2)d2d2d100p").expr_cal()
+    #表达式计算，属于step3
+    def single_expr_cal(self, expr:list, expr_str):
+        for i in range(0, len(expr)):
+            #查询是否为掷骰式，含有下列元素则说明其符合
+            if expr[i] in ["d","p","k","q","b"]:
+                #掷骰表达式都给我进step4被解析
+                res_str, res = Roll_Analysis(expr).solve()
+                return res_str, res
+        #普通列表表达式转结果
+        res_str = "".join(map(str,expr))
+        #ans如果是数字，其会经过eval导致变为int
+        res = str(eval(res_str))
+        expr_str = "".join(expr_str)
+        return expr_str, res
+
+
+
+ori_expr, res_str, res = Dice("3d100k2+(2*2)d2d2d100pk2").expr_cal()
 print("{}={}={}".format(ori_expr, res_str, res))
+
+
+class Card:
+    def __init__(self):
+
+        return
+    def turn_attr(self, ori_str):
+        #.st力量50. . .
+        return
