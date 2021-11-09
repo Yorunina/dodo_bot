@@ -203,7 +203,7 @@ class Node_d:
         #排序
         ori_list = self.random_list
         self.random_list.sort()
-        self.random_list = self.random_list[-1-times:-1]
+        self.random_list = self.random_list[-times:]
         self.result = sum(self.random_list)
         self.result_str = "{" + ",".join(map(str, ori_list)) + "}" + "[" + "+".join(map(str, self.random_list)) + "]" + "(" + str(self.result) + ")"
         return
