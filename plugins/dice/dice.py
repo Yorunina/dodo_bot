@@ -42,7 +42,7 @@ class Roll_Analysis():
                     times = 1
                 elif expr[i-1].isdigit():
                     #如果是数字，那就规整
-                    times = int_reform(expr[i-1], 1, 100)
+                    times = int_reform(expr[i-1], 1, 1000)
                 else:
                     #如果啥都不是，那就是默认值
                     times = 1
@@ -114,7 +114,7 @@ class Roll_Analysis():
 #建立节点，属于step4中的小内容
 class Node_d:
     def __init__(self, times = 1, ceil = 100, floor = 1):
-        self.d_times, self.d_ceil, self.d_floor = int(times), int(ceil), int(floor)
+        self.d_times, self.d_ceil, self.d_floor = int(int_reform(times, 1 , 1000)), int(ceil), int(floor)
         self.d_cal()
         return
     def d_cal(self):
@@ -203,7 +203,7 @@ class Node_d:
         #排序
         ori_list = self.random_list
         self.random_list.sort()
-        self.random_list = self.random_list[-1-times:-1]
+        self.random_list = self.random_list[-times:]
         self.result = sum(self.random_list)
         self.result_str = "{" + ",".join(map(str, ori_list)) + "}" + "[" + "+".join(map(str, self.random_list)) + "]" + "(" + str(self.result) + ")"
         return
@@ -285,8 +285,12 @@ class Dice:
 
 
 
-ori_expr, res_str, res = Dice("3d100k2+(2*2)d2d2d100pk2").expr_cal()
+ori_expr, res_str, res = Dice("dddddddd").expr_cal()
 print("{}={}={}".format(ori_expr, res_str, res))
+
+
+
+
 
 
 class Card:
