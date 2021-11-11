@@ -1,9 +1,6 @@
 from pyparsing import *
 #import api
-import sqlite3
 import random
-import re
-import copy
 
 roll_ceil = 100
 
@@ -253,8 +250,8 @@ class Dice:
 
     #多深度遍历，入口下面就是这玩意，属于是step2
     def travers(self, expr):
-        #你他吗不深拷贝就乱鸡巴改是吧？啊？
-        expr_str = copy.deepcopy(expr)
+        #傻逼了，不用深拷贝
+        expr_str = list(expr)
         for i in range(0,len(expr)):
             row = expr[i]
             if isinstance(row, list):
@@ -285,7 +282,7 @@ class Dice:
 
 
 
-ori_expr, res_str, res = Dice("dddddddd").expr_cal()
+ori_expr, res_str, res = Dice("dd+2dp").expr_cal()
 print("{}={}={}".format(ori_expr, res_str, res))
 
 

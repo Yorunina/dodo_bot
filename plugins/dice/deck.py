@@ -3,7 +3,6 @@ import os
 import random
 import re
 import dice
-import copy
 
 class Deck:
     def __init__(self):
@@ -90,8 +89,8 @@ class Deck:
             ran_num_get = ran_num_get[0]
             if no_repeat:
                 ran_deck_get = res_list[ran_num_get]
-                #这傻逼深拷贝规则什么时候能x啊？
-                self.temp_deck[deck_name] = copy.deepcopy(res_list)
+                #傻逼了，不用深拷贝，对不起
+                self.temp_deck[deck_name] = list(res_list)
                 del self.temp_deck[deck_name][ran_num_get]
             else:
                 ran_deck_get = res_list[ran_num_get]
