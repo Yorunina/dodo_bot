@@ -2,7 +2,7 @@ import json
 import os
 import random
 import re
-import dice
+import roll
 
 class Deck:
     def __init__(self):
@@ -21,7 +21,6 @@ class Deck:
             if not filename.endswith(".json"):
                 continue
             #符合条件的就插进去
-            print(filename)
             self.load_deck(filename)
             #删掉尾缀，方便检索
             self.deck_file_name.append(filename.rstrip(".json"))
@@ -52,7 +51,7 @@ class Deck:
 
     def roll_cal(self, match) ->str:
         #这个用来解析roll表达式
-        ori_expr, res_str, res = dice.Dice(match.group(1)).expr_cal()
+        ori_expr, res_str, res = roll.Dice(match.group(1)).expr_cal()
         return res
 
     def get(self, deck_name, no_repeat = False):
@@ -69,8 +68,6 @@ class Deck:
                 pass
             elif no_repeat:
                 res_list = self.deck[deck_name]
-                print(deck_name)
-                print(self.deck[deck_name])
             else:
                 return ""
             for i in range(0, len(res_list)):
@@ -107,6 +104,13 @@ class Deck:
         else:
             return ""
 
-deck = Deck()
-print(deck.get(deck_name = "麻将对局"))
-print(deck.get(deck_name = "高考合约"))
+
+    def deck_get(msg):
+        re_command = re.match("draw\s*(.+)", msg.command, re.M | re.I)
+        command = re_command.group(1)
+        content = deck.get(command)
+        msg.send(content)
+        return
+
+if __name__ != "__main__":
+    deck = Deck()

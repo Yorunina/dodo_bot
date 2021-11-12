@@ -45,14 +45,17 @@ def flow_deal(msg, flow):
             # 如果成功
             if match_obj:
                 # 调用函数
+                print("已匹配关键词" + key)
                 obj['function'](msg)
                 break
         # 进行完全匹配
         if obj['match_type'] == 'abs' and msg.command == key:
+            print("已匹配关键词" + key)
             obj['function'](msg)
             break
         # 进行前缀匹配
         if obj['match_type'] == 'pre' and msg.command.lower().startswith(key):
+            print("已匹配关键词" + key)
             obj['function'](msg)
             break
     return
