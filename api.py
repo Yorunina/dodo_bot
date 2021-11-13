@@ -72,7 +72,8 @@ def get_group_new_msg(islandId):
     return data["data"]["messages"]
 
 
-def send_msg(channelId, type, content, resourceJson=None, referencedMessageId=None, tk=str(uuid.uuid4())):
+def send_msg(channelId, type, content, resourceJson=None, referencedMessageId=None):
+    tk = str(uuid.uuid4())
     if type == 1:
         payload = {"channelId": channelId,
                    "type": type, "content": content, "tk": tk}
@@ -86,7 +87,8 @@ def send_msg(channelId, type, content, resourceJson=None, referencedMessageId=No
     data = json.loads(res)
     return data
 
-def send_chat(islandId, toUid, type, content, resourceJson=None, tk=str(uuid.uuid4())):
+def send_chat(islandId, toUid, type, content, resourceJson=None):
+    tk = str(uuid.uuid4())
     if type == 1:
         payload = {"islandId": islandId, "toUid": toUid,
                        "type": type, "content": content, "tk": tk}
@@ -245,8 +247,8 @@ class Plugin:
         name = filename.rsplit(".", 1)[0]
         try:
             module = import_module(name)
-        except:
-            print("插件%s载入出错！"%name)
+        except Exception as r:
+            print("插件" + name + "载入出错！" + r)
             return
         print("载入插件%s成功"%name)
         return module

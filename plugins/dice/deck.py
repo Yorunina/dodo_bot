@@ -7,7 +7,8 @@ import roll
 class Deck:
     def __init__(self):
         self.deck_file_name = []
-        self.deck = {}
+        self.deck_search_list = {}
+        self.deck = dict()
         #temp deck用于存储非重取出数据
         self.temp_deck = {}
         self.deck_file = './config/dice/deck/'
@@ -21,9 +22,17 @@ class Deck:
             if not filename.endswith(".json"):
                 continue
             #符合条件的就插进去
-            self.load_deck(filename)
+            #采用惰加载，不插了，有需要的再插
+            #self.load_deck(filename)
             #删掉尾缀，方便检索
-            self.deck_file_name.append(filename.rstrip(".json"))
+            re_filename = filename.rstrip(".json")
+            #加载文件中的所有key储存到可检索表中
+            with open(self.deck_file + filename,'r',encoding='utf8') as fp:
+                json_data = json.load(fp)
+                for key, value in  json_data.items():
+                    #把所有可用的牌堆名称与文件名进行字典映射
+                    self.deck_search_list[key] = filename
+            self.deck_file_name.append(re_filename)
         return
 
     def load_deck(self, filename:str):
@@ -40,7 +49,6 @@ class Deck:
     
     def next_get(self, match) ->str:
         #这个啊，这个用来返回下一层的牌堆获取结果
-
         deck_name = match.group(1)
         if deck_name.startswith("%"):
             deck_name = deck_name[1:]
@@ -56,7 +64,14 @@ class Deck:
 
     def get(self, deck_name, no_repeat = False):
         if deck_name in self.deck:
+            flag = True
+        elif deck_name in self.deck_search_list:
+            self.load_deck(deck_name + ".json")
+            flag = True
+        else:
+            return ""
             #如果存在该牌堆，那么就读取json
+        if flag:
             if (deck_name in self.temp_deck) and no_repeat:
                 #如果已经存在在非重列表中，且非重选择，那么就
                 res_list = self.temp_deck[deck_name]
@@ -101,8 +116,6 @@ class Deck:
             if no_repeat:
                 self.temp_deck.pop(deck_name)
             return next_deck
-        else:
-            return ""
 
 
     def deck_get(msg):
@@ -111,6 +124,7 @@ class Deck:
         content = deck.get(command)
         msg.send(content)
         return
+
 
 if __name__ != "__main__":
     deck = Deck()
