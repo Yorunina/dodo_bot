@@ -73,8 +73,8 @@ def match_process(ori_msg):
             api.Plugin()
         try:
             flow_deal(msg, match_map['group'])
-        except:
-            raise"匹配时出现错误：" + Exception
+        except Exception as r:
+            print("匹配时出现错误 + : %s: %s" %(r.errno, r.strerror))
     return
 
 
@@ -82,25 +82,28 @@ def main_loop():
     global config
     # 遍历获取群消息
     for group in config.group_list:
-        msg_list = api.get_group_new_msg(group)
-        # 记录新的时间锁
-        new_ts = config.ts_lock[group]
-        for msg in msg_list:
-            # 比对时间锁刷新消息列表
-            # 屁，没createTime。用id大小判断吧
-            if msg["id"] > config.ts_lock[group]:
-                # 将获取到的消息送入匹配序列
-                # 比对id和之前id的大小，更新时间锁
-                new_ts = msg["id"]
-                msg["group"] = group
-                # print(msg)
-                # 创建匹配线程送入后续处理
-                match_loop = threading.Thread(target=match_process, args=[msg])
-                match_loop.start()
-            else:
-                continue
-        # 进行时间锁的更新
-        config.ts_lock[group] = new_ts
+        try:
+            msg_list = api.get_group_new_msg(group)
+            # 记录新的时间锁
+            new_ts = config.ts_lock[group]
+            for msg in msg_list:
+                # 比对时间锁刷新消息列表
+                # 屁，没createTime。用id大小判断吧
+                if msg["id"] > config.ts_lock[group]:
+                    # 将获取到的消息送入匹配序列
+                    # 比对id和之前id的大小，更新时间锁
+                    new_ts = msg["id"]
+                    msg["group"] = group
+                    # print(msg)
+                    # 创建匹配线程送入后续处理
+                    match_loop = threading.Thread(target=match_process, args=[msg])
+                    match_loop.start()
+                else:
+                    continue
+            # 进行时间锁的更新
+            config.ts_lock[group] = new_ts
+        except:
+            return
     return
 
 

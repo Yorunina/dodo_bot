@@ -10,7 +10,7 @@ class Deck:
         self.deck_search_list = {}
         self.deck = dict()
         #temp deck用于存储非重取出数据
-        self.temp_deck = {}
+        self.poss_deck = {}
         self.deck_file = './config/dice/deck/'
         self.load_dir()
         return
@@ -55,14 +55,18 @@ class Deck:
             no_repeat = True
         else:
             no_repeat = False
-        return self.get(deck_name, no_repeat)
+        return self.tra_get(deck_name, no_repeat)
 
     def roll_cal(self, match) ->str:
         #这个用来解析roll表达式
         ori_expr, res_str, res = roll.Dice(match.group(1)).expr_cal()
         return res
 
-    def get(self, deck_name, no_repeat = False):
+    def get(self, deck_name):
+        self.poss_deck = {}
+        return self.tra_get(deck_name)
+
+    def tra_get(self, deck_name, no_repeat = False):
         if deck_name in self.deck:
             flag = True
         elif deck_name in self.deck_search_list:
@@ -72,56 +76,52 @@ class Deck:
             return ""
             #如果存在该牌堆，那么就读取json
         if flag:
-            if (deck_name in self.temp_deck) and no_repeat:
-                #如果已经存在在非重列表中，且非重选择，那么就
-                res_list = self.temp_deck[deck_name]
+            res_list = self.deck[deck_name]
+            if deck_name in self.poss_deck:
+                #如果已经存在概率表，且目前为非重状态
+                #则当前概率列表为概率存储中的内容
+                poss_list = self.poss_deck[deck_name]
+                if sum(poss_list) == 0:
+                    poss_list = []
             else:
-                res_list = self.deck[deck_name]
-            #权重分配
-            deck_weight = []
-            if len(res_list)!=0:
-                pass
-            elif no_repeat:
-                res_list = self.deck[deck_name]
-            else:
-                return ""
-            for i in range(0, len(res_list)):
-                #进行权重匹配
-                #正则，头匹配，取出可能存在的权重
-                re_deck_weight = re.match('::(\d+)::', res_list[i], flags=re.I|re.M)
-                if re_deck_weight:
-                    #如果存在权重，那么分配对应的数字
-                    deck_weight.append(int(re_deck_weight.group(1)))
-                else:
-                    #否则就认为是1
-                    deck_weight.append(1)
+                #否则就获取一个新的概率表
+                self.poss_deck[deck_name] = []
+                poss_list = []
+
+            if poss_list == []:
+                for i in range(0, len(res_list)):
+                    #进行权重匹配
+                    #正则，头匹配，取出可能存在的权重
+                    re_deck_weight = re.match('::([d\+\-\*/\d]+)::', res_list[i], flags=re.I|re.M)
+                    if re_deck_weight:
+                        #如果存在权重，那么分配对应的数字
+                        poss_list.append(int(self.roll_cal(re_deck_weight)))
+                    else:
+                        #否则就认为是1
+                        poss_list.append(1)
+                self.poss_deck[deck_name] = poss_list
             #在已知权重的情况下，进行随机取出
             #从已知序列里面取数值，然后再从列表取，这样可以保留Index，以进行非重的删除
-            ran_num_get = random.choices(range(0, len(deck_weight)), deck_weight, k=1)
+            ran_num_get = random.choices(range(0, len(poss_list)), poss_list, k=1)
             ran_num_get = ran_num_get[0]
             if no_repeat:
-                ran_deck_get = res_list[ran_num_get]
-                #傻逼了，不用深拷贝，对不起
-                self.temp_deck[deck_name] = list(res_list)
-                del self.temp_deck[deck_name][ran_num_get]
-            else:
-                ran_deck_get = res_list[ran_num_get]
+                self.poss_deck[deck_name][ran_num_get] -= 1
+            ran_deck_get = res_list[ran_num_get]
             #三个步骤
             #替换出下一层的牌堆
             next_deck = re.sub("\{(%?[^\}]+)\}", self.next_get, ran_deck_get, flags=re.I|re.M)
             #替换出掷骰表达式
             next_deck = re.sub("\[([^\}]+)\]", self.roll_cal, next_deck, flags=re.I|re.M)
             #替换掉可能存在的权重符号
-            next_deck = re.sub("::\d+::\s*", "", next_deck, flags=re.I|re.M)
-            if no_repeat:
-                self.temp_deck.pop(deck_name)
+            next_deck = re.sub("::([d\+\-\*/\d]+)::\s*", "", next_deck, flags=re.I|re.M)
+
             return next_deck
 
 
     def deck_get(msg):
         re_command = re.match("draw\s*(.+)", msg.command, re.M | re.I)
         command = re_command.group(1)
-        content = deck.get(command)
+        content = deck.self.tra_get(command)
         msg.send(content)
         return
 
